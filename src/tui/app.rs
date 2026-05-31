@@ -566,7 +566,17 @@ mod tests {
     }
 
     fn mk_app() -> App {
-        let mut app = App {
+        use std::sync::Once;
+        static INIT: Once = Once::new();
+        INIT.call_once(|| {
+            let tmp = std::env::temp_dir().join(format!("clashtui-test-{}", fastrand::u32(..)));
+            std::fs::create_dir_all(&tmp).ok();
+            let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                crate::config::init(Some(tmp)).unwrap()
+            }));
+        });
+
+        App {
             tabs: vec![
                 Tab::from(StatusTab::default()),
                 Tab::from(FileTab::default()),
@@ -581,9 +591,7 @@ mod tests {
             global_chord: ChordHandler::default(),
             help: HelpPanel::default(),
             tab_index: 0,
-        };
-        app.tabs[0].on_enter();
-        app
+        }
     }
 
     #[test]

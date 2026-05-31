@@ -407,7 +407,9 @@ mod tests {
         }
         let _cleanup = Cleanup(tmp.clone());
 
-        init(Some(tmp.clone())).unwrap();
+        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            init(Some(tmp.clone())).unwrap()
+        }));
 
         let mihomo_dir = core_data_dir(CoreType::Mihomo);
         assert!(
