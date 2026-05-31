@@ -19,6 +19,7 @@
     .\install.ps1 -Core mihomo
 #>
 
+[CmdletBinding()]
 param(
     [string]$InstallDir = "D:\ClashTui",
     [ValidateSet("mihomo", "sing-box", "all")]
@@ -190,6 +191,17 @@ function Get-CommandPath {
     return $null
 }
 
+function Resolve-BinaryPath {
+    param([string]$Name)
+    $source = Get-CommandPath $Name
+    if (-not $source) { return $null }
+    $real = & scoop which $Name 2>$null | Select-Object -First 1
+    if ($real -and (Test-Path $real.Trim())) {
+        return $real.Trim()
+    }
+    return $source
+}
+
 # --- Binary download ---
 function Get-LatestGithubRelease {
     param([string]$Repo)
@@ -224,13 +236,13 @@ function Install-Mihomo {
         return
     }
 
-    # Found in PATH — link/copy to destination
-    $existing = Get-CommandPath "mihomo.exe"
+    # Found in PATH — copy
+    $existing = Resolve-BinaryPath "mihomo.exe"
     if ($existing) {
-        Write-Info "Found mihomo in PATH: $existing, linking..."
+        Write-Info "Found mihomo in PATH: $existing, copying..."
         New-Item -ItemType Directory -Path $destDir -Force | Out-Null
-        Copy-Item -Path $existing -Destination $destExe -Force
-        Write-Info "Linked mihomo to: $destExe"
+        Copy-Item $existing $destExe -Force
+        Write-Info "Copied mihomo to: $destExe"
         return
     }
 
@@ -267,7 +279,7 @@ function Install-Mihomo {
         Invoke-WebRequest -Uri $assetUrl -OutFile $zipPath -UseBasicParsing
         Expand-Archive -Path $zipPath -DestinationPath $tempDir -Force
 
-        $binary = Get-ChildItem -Path $tempDir -Recurse -Name "mihomo.exe" | Select-Object -First 1
+        $binary = Get-ChildItem -Path $tempDir -Recurse -Filter "*mihomo*.exe" -Name | Select-Object -First 1
         if (-not $binary) {
             Write-ErrorLog "Could not find mihomo.exe in the downloaded archive"
             exit 1
@@ -293,13 +305,13 @@ function Install-SingBox {
         return
     }
 
-    # Found in PATH — link/copy to destination
-    $existing = Get-CommandPath "sing-box.exe"
+    # Found in PATH — copy
+    $existing = Resolve-BinaryPath "sing-box.exe"
     if ($existing) {
-        Write-Info "Found sing-box in PATH: $existing, linking..."
+        Write-Info "Found sing-box in PATH: $existing, copying..."
         New-Item -ItemType Directory -Path $destDir -Force | Out-Null
-        Copy-Item -Path $existing -Destination $destExe -Force
-        Write-Info "Linked sing-box to: $destExe"
+        Copy-Item $existing $destExe -Force
+        Write-Info "Copied sing-box to: $destExe"
         return
     }
 
@@ -335,7 +347,7 @@ function Install-SingBox {
         Invoke-WebRequest -Uri $assetUrl -OutFile $zipPath -UseBasicParsing
         Expand-Archive -Path $zipPath -DestinationPath $tempDir -Force
 
-        $binary = Get-ChildItem -Path $tempDir -Recurse -Name "sing-box.exe" | Select-Object -First 1
+        $binary = Get-ChildItem -Path $tempDir -Recurse -Filter "*sing-box*.exe" -Name | Select-Object -First 1
         if (-not $binary) {
             Write-ErrorLog "Could not find sing-box.exe in the downloaded archive"
             exit 1
@@ -363,13 +375,13 @@ function Install-ClashTui {
         return
     }
 
-    # Found in PATH — link/copy to destination
-    $existing = Get-CommandPath "clashtui.exe"
+    # Found in PATH — copy
+    $existing = Resolve-BinaryPath "clashtui.exe"
     if ($existing) {
-        Write-Info "Found clashtui in PATH: $existing, linking..."
+        Write-Info "Found clashtui in PATH: $existing, copying..."
         New-Item -ItemType Directory -Path $destDir -Force | Out-Null
-        Copy-Item -Path $existing -Destination $destExe -Force
-        Write-Info "Linked clashtui to: $destExe"
+        Copy-Item $existing $destExe -Force
+        Write-Info "Copied clashtui to: $destExe"
         New-ClashTuiConfig $CoreType
         return
     }
@@ -403,7 +415,7 @@ function Install-ClashTui {
         Invoke-WebRequest -Uri $assetUrl -OutFile $zipPath -UseBasicParsing
         Expand-Archive -Path $zipPath -DestinationPath $tempDir -Force
 
-        $binary = Get-ChildItem -Path $tempDir -Recurse -Name "clashtui.exe" | Select-Object -First 1
+        $binary = Get-ChildItem -Path $tempDir -Recurse -Filter "*clashtui*.exe" -Name | Select-Object -First 1
         if (-not $binary) {
             Write-ErrorLog "Could not find clashtui.exe in the downloaded archive"
             exit 1
@@ -464,7 +476,8 @@ extra:
   open_dir_cmd:
 "@
 
-    Set-Content -Path $configPath -Value $configContent -Encoding UTF8
+    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::WriteAllText($configPath, $configContent, $utf8NoBom)
     Write-Info "Config written to: $configPath"
 
     # Create directories and template_proxy_providers.yaml
@@ -494,7 +507,7 @@ extra:
 
         $tppPath = Join-Path $MIHOMO_USER_CONFIG_DIR "template_proxy_providers.yaml"
         if (-not (Test-Path $tppPath)) {
-            Set-Content -Path $tppPath -Value $tppContent -Encoding UTF8
+            [System.IO.File]::WriteAllText($tppPath, $tppContent, $utf8NoBom)
         }
     }
 
@@ -505,7 +518,7 @@ extra:
 
         $tppPath = Join-Path $SINGBOX_USER_CONFIG_DIR "template_proxy_providers.yaml"
         if (-not (Test-Path $tppPath)) {
-            Set-Content -Path $tppPath -Value $tppContent -Encoding UTF8
+            [System.IO.File]::WriteAllText($tppPath, $tppContent, $utf8NoBom)
         }
     }
 }
@@ -516,28 +529,26 @@ function New-CoreConfigs {
     Write-Info "Creating core config files..."
 
     if ($CoreType -eq "mihomo" -or $CoreType -eq "all") {
-        Backup-Dir $MIHOMO_CONFIG_DIR
         New-Item -ItemType Directory -Path $MIHOMO_CONFIG_DIR -Force | Out-Null
 
         $cfgSrc = "default_configs/mihomo/core_override_config.yaml"
+        Backup-File (Join-Path $MIHOMO_CONFIG_DIR "config.yaml")
         Copy-Contrib $cfgSrc (Join-Path $MIHOMO_CONFIG_DIR "config.yaml")
         Write-Info "Mihomo core config written to: $MIHOMO_CONFIG_DIR/config.yaml"
 
-        Backup-Dir $MIHOMO_USER_CONFIG_DIR
         New-Item -ItemType Directory -Path $MIHOMO_USER_CONFIG_DIR -Force | Out-Null
         Copy-Contrib $cfgSrc (Join-Path $MIHOMO_USER_CONFIG_DIR "core_override_config.yaml")
         Write-Info "Mihomo core override written to: $MIHOMO_USER_CONFIG_DIR/core_override_config.yaml"
     }
 
     if ($CoreType -eq "sing-box" -or $CoreType -eq "all") {
-        Backup-Dir $SINGBOX_CONFIG_DIR
         New-Item -ItemType Directory -Path $SINGBOX_CONFIG_DIR -Force | Out-Null
 
         $cfgSrc = "default_configs/sing-box/core_override_config.json"
+        Backup-File (Join-Path $SINGBOX_CONFIG_DIR "config.json")
         Copy-Contrib $cfgSrc (Join-Path $SINGBOX_CONFIG_DIR "config.json")
         Write-Info "Sing-box core config written to: $SINGBOX_CONFIG_DIR/config.json"
 
-        Backup-Dir $SINGBOX_USER_CONFIG_DIR
         New-Item -ItemType Directory -Path $SINGBOX_USER_CONFIG_DIR -Force | Out-Null
         Copy-Contrib $cfgSrc (Join-Path $SINGBOX_USER_CONFIG_DIR "core_override_config.json")
         Write-Info "Sing-box core override written to: $SINGBOX_USER_CONFIG_DIR/core_override_config.json"

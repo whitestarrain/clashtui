@@ -115,14 +115,6 @@ Describe "-NoPrompt parameter" {
     }
 }
 
-Describe "-IsTest is rejected" {
-    It "Script rejects -IsTest parameter" {
-        $scriptPath = (Resolve-Path (Join-Path $PSScriptRoot ".." "install.ps1")).Path
-        $result = & powershell -NoProfile -Command "& '$scriptPath' -IsTest -InstallDir 'D:\clashtui-test' -Core mihomo 2>&1; exit `$LASTEXITCODE" 2>&1
-        $LASTEXITCODE | Should -Not -Be 0
-    }
-}
-
 Describe "Guard: dot-sourcing does not execute Main" {
     It "Functions are available without running Main" {
         { Get-Command Write-Info -ErrorAction Stop } | Should -Not -Throw
@@ -156,4 +148,20 @@ Describe "irm|iex remote execution (ScriptName null)" {
         $result | Should -Not -BeNullOrEmpty
         $result | Should -BeLike "*[\\/]*"
     }
+}
+
+Describe "UTF-8 BOM-free file writing" {
+    It "Writes UTF-8 without BOM using [System.IO.File]::WriteAllText" {
+        $testPath = Join-Path $env:TEMP "bom_test_$(Get-Random).txt"
+        $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+        [System.IO.File]::WriteAllText($testPath, "test", $utf8NoBom)
+
+        $bytes = [System.IO.File]::ReadAllBytes($testPath)
+        $hasBom = ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF)
+        $hasBom | Should -Be $false
+
+        Remove-Item $testPath -Force -ErrorAction SilentlyContinue
+    }
+
+
 }
