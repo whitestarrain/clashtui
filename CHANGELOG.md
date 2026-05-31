@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2-alpha.2] - 2026-06-01
+
+### Added
+- Real install testing with verify_install.py (#97)
+
+### Changed
+- Consolidate install testing workflows (#99)
+
+### Fixed
+- sing-box download URL (#99)
+- BOM handling in install scripts (#99)
+
 ## [0.3.2-alpha.1] - 2026-05-31
 
 ### Added
@@ -322,7 +334,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Profile switching
 - Service start/stop control
 
-[Unreleased]: https://github.com/JohanChane/clashtui/compare/v0.3.2-alpha.1...HEAD
+[Unreleased]: https://github.com/JohanChane/clashtui/compare/v0.3.2-alpha.2...HEAD
+[0.3.2-alpha.2]: https://github.com/JohanChane/clashtui/compare/v0.3.2-alpha.1...v0.3.2-alpha.2
 [0.3.2-alpha.1]: https://github.com/JohanChane/clashtui/compare/v0.3.1...v0.3.2-alpha.1
 [0.3.1]: https://github.com/JohanChane/clashtui/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/JohanChane/clashtui/compare/v0.2.3...v0.3.0
