@@ -834,7 +834,32 @@ create_clashtui_config() {
   log_info "Copied default configs to: $CLASHTUI_CONFIG_DIR"
 
   # Generate single config.yaml with both core sections
-  cat >"$CLASHTUI_CONFIG_DIR/config.yaml" <<EOF
+  # On non-Linux platforms, omit service_controller (platform default is used)
+  if $IS_MACOS; then
+    cat >"$CLASHTUI_CONFIG_DIR/config.yaml" <<EOF
+mihomo:
+  core:
+    config_dir: ${MIHOMO_CONFIG_DIR}
+    bin_path: ${INSTALL_DIR_MIHOMO}/mihomo
+    config_path: ${MIHOMO_CONFIG_DIR}/config.yaml
+  core_service:
+    service_name: clashtui_mihomo
+    is_user: ${SERVICE_IS_USER}
+singbox:
+  core:
+    bin_path: ${INSTALL_DIR_SINGBOX}/sing-box
+    config_dir: ${SINGBOX_CONFIG_DIR}
+    config_path: ${SINGBOX_CONFIG_DIR}/config.json
+  core_service:
+    service_name: clashtui_singbox
+    is_user: ${SERVICE_IS_USER}
+timeout:
+extra:
+  edit_cmd:
+  open_dir_cmd:
+EOF
+  else
+    cat >"$CLASHTUI_CONFIG_DIR/config.yaml" <<EOF
 mihomo:
   core:
     config_dir: ${MIHOMO_CONFIG_DIR}
@@ -858,6 +883,7 @@ extra:
   edit_cmd:
   open_dir_cmd:
 EOF
+  fi
 
   log_info "Config written to: $CLASHTUI_CONFIG_DIR/config.yaml"
 
