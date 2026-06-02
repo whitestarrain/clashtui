@@ -1,6 +1,4 @@
-use super::{
-    MAX_SUPPORTED_TEMPLATE_VERSION, PROFILE_JSONS_PATH, PROFILE_YAMLS_PATH, TEMPLATE_PATH,
-};
+use super::{PROFILE_JSONS_PATH, PROFILE_YAMLS_PATH, TEMPLATE_PATH};
 use crate::config::database::{ProfileType, ProxyProviderGroups};
 use anyhow::{Context as _, bail};
 use std::collections::{HashMap, HashSet};
@@ -342,36 +340,6 @@ pub fn check_template_ppg_availability(
     Ok(())
 }
 
-pub fn create_template(path: String) -> anyhow::Result<Option<String>> {
-    let path = std::path::PathBuf::from(path);
-    let file = std::fs::File::open(&path)?;
-    let map: serde_yml::Mapping = serde_yml::from_reader(file)?;
-    // remove extension if exists
-    // file is opened, so file_name should exist
-    let name = path.with_extension("").file_name().unwrap().to_owned();
-    match map
-        .get("clashtui_template_version")
-        .and_then(|v| v.as_u64())
-    {
-        None => {
-            std::fs::copy(&path, TEMPLATE_PATH.join(name))?;
-            Ok(None)
-        }
-        Some(ver) if ver <= MAX_SUPPORTED_TEMPLATE_VERSION => {
-            std::fs::copy(&path, TEMPLATE_PATH.join(&name))?;
-            Ok(Some(format!(
-                "Name:{} Added\nClashtui Template Version {}",
-                // path from a String, should be UTF-8
-                name.to_str().unwrap(),
-                ver
-            )))
-        }
-        Some(_) => anyhow::bail!(
-            "Version higher than {} is not support",
-            MAX_SUPPORTED_TEMPLATE_VERSION
-        ),
-    }
-}
 pub fn apply_template(template_name: &str, profile_name: &str) -> anyhow::Result<()> {
     let groups = read_template_ppg(template_name)?;
     let path = TEMPLATE_PATH.join(template_name);
@@ -934,14 +902,23 @@ mod tests {
         pp.insert(
             "pvd0".to_string(),
             vec![
-                serde_yml::from_str::<serde_yml::Value>("name: HK-01\ntype: ss\nserver: hk1.example.com\nport: 443").unwrap(),
-                serde_yml::from_str::<serde_yml::Value>("name: HK-02\ntype: vmess\nserver: hk2.example.com\nport: 8443").unwrap(),
+                serde_yml::from_str::<serde_yml::Value>(
+                    "name: HK-01\ntype: ss\nserver: hk1.example.com\nport: 443",
+                )
+                .unwrap(),
+                serde_yml::from_str::<serde_yml::Value>(
+                    "name: HK-02\ntype: vmess\nserver: hk2.example.com\nport: 8443",
+                )
+                .unwrap(),
             ],
         );
         pp.insert(
             "pvd1".to_string(),
             vec![
-                serde_yml::from_str::<serde_yml::Value>("name: JP-01\ntype: ss\nserver: jp1.example.com\nport: 8388").unwrap(),
+                serde_yml::from_str::<serde_yml::Value>(
+                    "name: JP-01\ntype: ss\nserver: jp1.example.com\nport: 8388",
+                )
+                .unwrap(),
             ],
         );
         pp
@@ -972,10 +949,8 @@ mod tests {
 
         let result = inline_proxy_providers(tpl, pp_proxies.clone()).unwrap();
 
-        let result_pgs: Vec<serde_yml::Value> = serde_yml::from_value(
-            result.get("proxy-groups").unwrap().clone(),
-        )
-        .unwrap();
+        let result_pgs: Vec<serde_yml::Value> =
+            serde_yml::from_value(result.get("proxy-groups").unwrap().clone()).unwrap();
         let auto = &result_pgs[1];
         let proxies: Vec<String> = auto
             .get("proxies")
@@ -1003,10 +978,8 @@ mod tests {
 
         let result = inline_proxy_providers(tpl, pp_proxies.clone()).unwrap();
 
-        let result_pgs: Vec<serde_yml::Value> = serde_yml::from_value(
-            result.get("proxy-groups").unwrap().clone(),
-        )
-        .unwrap();
+        let result_pgs: Vec<serde_yml::Value> =
+            serde_yml::from_value(result.get("proxy-groups").unwrap().clone()).unwrap();
         let proxies: Vec<String> = result_pgs[0]
             .get("proxies")
             .and_then(|v| serde_yml::from_value(v.clone()).ok())
@@ -1029,10 +1002,8 @@ mod tests {
 
         let result = inline_proxy_providers(tpl, pp_proxies.clone()).unwrap();
 
-        let result_pgs: Vec<serde_yml::Value> = serde_yml::from_value(
-            result.get("proxy-groups").unwrap().clone(),
-        )
-        .unwrap();
+        let result_pgs: Vec<serde_yml::Value> =
+            serde_yml::from_value(result.get("proxy-groups").unwrap().clone()).unwrap();
         let proxies: Vec<String> = result_pgs[0]
             .get("proxies")
             .and_then(|v| serde_yml::from_value(v.clone()).ok())
@@ -1101,9 +1072,9 @@ mod tests {
     #[test]
     fn inline_rules_creates_rules_when_missing() {
         let tpl = serde_yml::Mapping::new();
-        let rules: Vec<serde_yml::Value> = vec![
-            serde_yml::Value::String("DOMAIN-SUFFIX,ads.example.com,REJECT".into()),
-        ];
+        let rules: Vec<serde_yml::Value> = vec![serde_yml::Value::String(
+            "DOMAIN-SUFFIX,ads.example.com,REJECT".into(),
+        )];
 
         let result = inline_rule_providers(tpl, &rules);
 
@@ -1132,10 +1103,8 @@ mod tests {
 
         let result = inline_proxy_providers(tpl, pp_proxies.clone()).unwrap();
 
-        let result_pgs: Vec<serde_yml::Value> = serde_yml::from_value(
-            result.get("proxy-groups").unwrap().clone(),
-        )
-        .unwrap();
+        let result_pgs: Vec<serde_yml::Value> =
+            serde_yml::from_value(result.get("proxy-groups").unwrap().clone()).unwrap();
         let proxies: Vec<String> = result_pgs[0]
             .get("proxies")
             .and_then(|v| serde_yml::from_value(v.clone()).ok())

@@ -28,6 +28,7 @@ pub fn exec_sudo(args: Vec<&str>, password: &str) -> Result<String> {
     let output = child.wait_with_output()?;
     Ok(stringify_output(output))
 }
+#[cfg(unix)]
 pub fn sudo_needs_password() -> bool {
     !std::process::Command::new("sudo")
         .args(["-n", "true"])
@@ -49,9 +50,7 @@ pub fn spawn(pgm: &str, args: Vec<&str>) -> Result<()> {
 }
 
 fn sanitize_windows_path(path: &str) -> String {
-    let path = path
-        .strip_prefix(r"\\?\")
-        .unwrap_or(path);
+    let path = path.strip_prefix(r"\\?\").unwrap_or(path);
     path.replace('\\', "/")
 }
 
@@ -94,34 +93,22 @@ mod tests {
 
     #[test]
     fn sanitize_unc_prefix_stripped() {
-        assert_eq!(
-            sanitize_windows_path(r"\\?\C:\Users\foo"),
-            "C:/Users/foo"
-        );
+        assert_eq!(sanitize_windows_path(r"\\?\C:\Users\foo"), "C:/Users/foo");
     }
 
     #[test]
     fn sanitize_non_unc_untouched() {
-        assert_eq!(
-            sanitize_windows_path(r"C:\Users\foo"),
-            "C:/Users/foo"
-        );
+        assert_eq!(sanitize_windows_path(r"C:\Users\foo"), "C:/Users/foo");
     }
 
     #[test]
     fn sanitize_forward_slashes_unchanged() {
-        assert_eq!(
-            sanitize_windows_path("C:/Users/foo"),
-            "C:/Users/foo"
-        );
+        assert_eq!(sanitize_windows_path("C:/Users/foo"), "C:/Users/foo");
     }
 
     #[test]
     fn sanitize_mixed_slashes_converted() {
-        assert_eq!(
-            sanitize_windows_path(r"C:\foo/bar\baz"),
-            "C:/foo/bar/baz"
-        );
+        assert_eq!(sanitize_windows_path(r"C:\foo/bar\baz"), "C:/foo/bar/baz");
     }
 
     #[test]
@@ -139,9 +126,6 @@ mod tests {
 
     #[test]
     fn sanitize_path_without_backslashes() {
-        assert_eq!(
-            sanitize_windows_path("C:/foo/bar/baz"),
-            "C:/foo/bar/baz"
-        );
+        assert_eq!(sanitize_windows_path("C:/foo/bar/baz"), "C:/foo/bar/baz");
     }
 }
