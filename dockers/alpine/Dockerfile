@@ -20,7 +20,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --de
 
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-COPY dockers/alpine/entrypoint.sh /entrypoint.sh
+COPY alpine/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]

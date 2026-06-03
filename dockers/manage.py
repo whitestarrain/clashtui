@@ -7,8 +7,15 @@ import subprocess
 import sys
 from pathlib import Path
 
+def _find_project_root(start: Path) -> Path:
+    for parent in [start, *start.parents]:
+        if (parent / "Cargo.toml").exists():
+            return parent
+    raise FileNotFoundError("Could not find project root (Cargo.toml)")
+
 SCRIPT_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = SCRIPT_DIR.parent
+PROJECT_ROOT = _find_project_root(SCRIPT_DIR)
+BUILD_CTX = SCRIPT_DIR
 IMAGE_NAME = "clashtui-alpine-dev"
 CONTAINER_NAME = "clashtui-openrc-test"
 
@@ -23,9 +30,9 @@ def build(args):
     run(
         [
             "docker", "build",
-            "-f", str(SCRIPT_DIR / "alpine" / "Dockerfile"),
+            "-f", str(BUILD_CTX / "alpine" / "Dockerfile"),
             "-t", IMAGE_NAME,
-            str(PROJECT_ROOT),
+            str(BUILD_CTX),
         ]
     )
     print(f"Image {IMAGE_NAME} built successfully.")
