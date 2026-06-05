@@ -1337,6 +1337,7 @@ main() {
       fi
     fi
   else
+    log_info "To apply group file permissions, either log out and back in (RECOMMENDED) or run 'newgrp $USER' (TEMPORARY)."
     if $IS_MACOS; then
       log_info "System mode: plist files created in /Library/LaunchDaemons/"
       log_info "Services are NOT started automatically. Use these commands:"
