@@ -9,8 +9,7 @@
   <a href="https://github.com/JohanChane/clashtui/actions/workflows/release.yml"><img src="https://github.com/JohanChane/clashtui/actions/workflows/release.yml/badge.svg" alt="Release CI"></a>
 </p>
 
-<video src="https://github.com/user-attachments/assets/7808534a-84bc-4967-a024-534487ab7aaf" controls width="100%"></video>
-
+[clashtui_demo.webm](https://github.com/user-attachments/assets/51d3ee85-b1f4-4d02-9a43-623153e3825b)
 
 Language: [English](./README.md) | [中文](./README_ZH.md)
 
