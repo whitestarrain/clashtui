@@ -6,8 +6,6 @@ use super::utils::raw_mode;
 static CSI_U_ENABLED: AtomicBool = AtomicBool::new(false);
 
 fn probe() {
-    // CSI-u (kitty keyboard protocol) probe — only meaningful on Unix TTYs.
-    // On Windows, raw mode stdin reads block until a keypress, so skip entirely.
     #[cfg(unix)]
     {
         let mut stdout = std::io::stdout().lock();
@@ -18,12 +16,26 @@ fn probe() {
         std::thread::sleep(std::time::Duration::from_millis(50));
 
         use std::io::Read;
-        let mut stdin = std::io::stdin().lock();
+        use std::os::fd::AsRawFd;
+
+        let stdin = std::io::stdin();
+        let fd = stdin.as_raw_fd();
+
+        let flags = unsafe { libc::fcntl(fd, libc::F_GETFL, 0) };
+        if flags != -1 {
+            unsafe { libc::fcntl(fd, libc::F_SETFL, flags | libc::O_NONBLOCK) };
+        }
+
         let mut buf = [0u8; 32];
+        let mut stdin = stdin.lock();
         if let Ok(n) = stdin.read(&mut buf) {
             if n > 0 && buf[..n].windows(5).any(|w| w == b"\x1b[?0u") {
                 CSI_U_ENABLED.store(true, Ordering::Relaxed);
             }
+        }
+
+        if flags != -1 {
+            unsafe { libc::fcntl(fd, libc::F_SETFL, flags) };
         }
     }
 }
